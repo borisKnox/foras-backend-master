@@ -16,8 +16,8 @@ email/pass: admin@foras.app / PayA4afAC^b4c$1
 https://premium87.web-hosting.com/cpanel 
 or http://foras.app/cpanel 
 
-cPanel username: foraqydg 
-cPanel password: SGWlYozFf1Di 
+cPanel username: foraqydg
+cPanel password: SGWlYozFf1Di
 
 project directory: foras
 

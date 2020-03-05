@@ -11,6 +11,7 @@ use App\Job;
 use App\Notification;
 use App\Message;
 use App\Ticket;
+use App\Package;
 
 class AdminController extends Controller
 {
@@ -290,4 +291,37 @@ class AdminController extends Controller
             return response()->json(['status' => 200, 'message' => 'foras-success', 'data' => $tickets], 200);
         }
 	}
+
+    // new package
+    public function newPackage(Request $request) {
+        if ($request->isMethod('post')) {
+            $header = $request->header('Authorization');
+            $api_token = str_replace('Bearer ', '', $header);
+
+            $admin = AdminUser::where('api_token', '=', $api_token)->first();
+
+            if(!$admin) {
+                return response()->json(['status' => 400, 'errors' => 'Invalid errors'], 400);
+            }
+
+            $validator = Validator::make($request->all(), [
+                'price' => 'required',
+                'contactCount' => 'required',
+                'postCount' => 'required',
+            ]);
+
+            if ($validator->fails()) {
+                return response()->json(['status' => 400, 'errors' => $validator->errors()], 400);
+            }
+
+            $package = new Package();
+            $package->price = $request->price;
+            $package->contactCount = $request->contactCount;
+            $package->postCount = $request->postCount;
+            $package->save();
+
+             return response()->json(['status' => 200, 'message' => 'foras-success', 'data' => ''], 200);
+        }
+    }
+
 }

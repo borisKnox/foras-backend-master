@@ -129,4 +129,11 @@ Route::group(['prefix' => 'admin'], function () {
     Route::post('/newNotification', 'AdminController@newNotification');
     Route::post('/messages', 'AdminController@getMessages');
     Route::post('/tickets', 'AdminController@getTickets');
+    Route::post('/newPackage', 'AdminController@newPackage');
+    Route::post('/getPackageList', 'PackageController@getPackageList');
+    Route::post('/getPaymentHistory', 'PackageController@getPaymentHistory');
+    Route::post('/searchPaymentHistory', 'PackageController@searchPaymentHistory');
 });
+
+
+Route::post('/setPackage', 'PackageController@setPackage');
