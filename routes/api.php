@@ -35,7 +35,14 @@ Route::group(['prefix' => 'categories'], function() {
 
 Route::group(['prefix' => 'jobs'], function() {
     Route::post('create', 'JobController@create');
+    Route::post('offer', 'JobController@offer');
+    Route::post('diroffer', 'JobController@diroffer');
+    Route::post('accept', 'JobController@accept');
+    Route::post('reject', 'JobController@reject');
     Route::post('read', 'JobController@index');
+    Route::post('myjob', 'JobController@myjob');
+    Route::post('openjob', 'JobController@openjob');
+    Route::post('historyjob', 'JobController@historyjob');
     Route::put('update/{id}', 'JobController@update');
     Route::delete('delete/{id}', 'JobController@delete');
     Route::get('details/{id}', 'JobController@details');
@@ -76,6 +83,7 @@ Route::group(['prefix' => 'messages'], function() {
 Route::group(['prefix' => 'notifications'], function() {
     Route::get('/', 'NotificationController@index');
     Route::post('/create', 'NotificationController@create');
+    Route::post('/sendtoken', 'NotificationController@sendtoken');
 });
 
 
@@ -115,6 +123,7 @@ Route::group(['prefix' => 'web'], function () {
     Route::post('/register', 'AuthController@registerFromWeb');
     Route::post('/login/socials', 'AuthController@loginBySocialFromWeb');
     Route::post('/submitTicket', 'TicketController@create');
+    Route::post('/membershippay', 'PackageController@setPackage');
 });
 
 // ============= Admin Panel ============== //

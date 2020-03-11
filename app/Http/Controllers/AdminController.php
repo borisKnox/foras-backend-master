@@ -5,10 +5,17 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Validator;
+
+use LaravelFCM\Message\OptionsBuilder;
+use LaravelFCM\Message\PayloadDataBuilder;
+use LaravelFCM\Message\PayloadNotificationBuilder;
+use FCM;
+
 use App\AdminUser;
 use App\User;
 use App\Job;
 use App\Notification;
+use App\DeviceToken;
 use App\Message;
 use App\Ticket;
 use App\Package;
@@ -234,11 +241,31 @@ class AdminController extends Controller
                 return response()->json(['status' => 400, 'errors' => $validator->errors()], 400);
             }
 
-            $notification = new Notification();
-            $notification->type = $request->type;
-            $notification->message = $request->message;
-            $notification->save();
+            // $notification = new Notification();
+            // $notification->type = $request->type;
+            // $notification->message = $request->message;
+            // $notification->save();
 
+            $optionBuilder = new OptionsBuilder();
+            $optionBuilder->setTimeToLive(60*20);
+
+            $notificationBuilder = new PayloadNotificationBuilder($request->type);
+            $notificationBuilder->setBody($request->message)
+                                ->setSound('default');
+
+            $dataBuilder = new PayloadDataBuilder();
+            $dataBuilder->addData(['a_data' => 'my_data']);
+
+            $option = $optionBuilder->build();
+            $notification = $notificationBuilder->build();
+            $data = $dataBuilder->build();
+            if(DeviceToken::count() == 0){
+                return response()->json(['status' => 400, 'errors' => $validator->errors()], 400);
+            }
+            foreach(DeviceToken::all() as $tokens){
+                $downstreamResponse = FCM::sendTo($tokens->token, $option, $notification, $data);
+            }
+            
             $notifications = Notification::all();
 
             return response()->json(['status' => 200, 'message' => 'foras-success', 'data' => $notifications], 200);

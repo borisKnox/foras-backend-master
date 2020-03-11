@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use App\Notification;
+use App\DeviceToken;
 use App\User;
 use Validator;
 
@@ -37,6 +38,23 @@ class NotificationController extends Controller
         $notification = new Notification();
         $notification->type = $request->type;
         $notification->message = $request->message;
+        $notification->save();
+
+        return response()->json(['status' => 200, 'message' => 'foras-success', 'data' => ''], 200);
+    }
+    public function sendtoken(Request $request) {
+        $validator = Validator::make($request->all(), [
+            'token' => 'required'
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json(['status' => 400, 'errors' => $validator->errors()], 400);
+        }
+        if(DeviceToken::where('token',$request->token)->count() != 0){
+            return response()->json(['status' => 400, 'errors' => $validator->errors()], 400);
+        }
+        $notification = new DeviceToken();
+        $notification->token = $request->token;
         $notification->save();
 
         return response()->json(['status' => 200, 'message' => 'foras-success', 'data' => ''], 200);

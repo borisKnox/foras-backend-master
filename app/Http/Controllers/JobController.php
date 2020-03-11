@@ -5,9 +5,11 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use Validator;
 use App\Job;
+use App\Jobcontact;
 use App\User;
 use App\Category;
 use App\Review;
+use App\Package;
 use DB;
 
 class JobController extends Controller
@@ -103,6 +105,55 @@ class JobController extends Controller
         return response()->json(['status' => 200, 'message' => $message, 'data' => $jobs], 200);
     }
 
+    public function myjob (Request $request) {
+        $header = $request->header('Authorization');
+        $api_token = str_replace('Bearer ', '', $header);
+
+        $user = User::where('api_token', '=', $api_token)->first();
+        if(!$user) {
+            return response()->json(['status' => 400, 'errors' => 'invalid token.'], 400);
+        }
+
+        $jobs_query = Job::join('users', 'users.id', '=', 'jobs.user_id')
+                        ->with(['users', 'categories']);
+
+        $jobs = $jobs_query->where('user_id', $user->id)->get();
+
+        return response()->json(['status' => 200, 'data' => $jobs], 200);
+    }
+
+    public function openjob (Request $request) {
+        $header = $request->header('Authorization');
+        $api_token = str_replace('Bearer ', '', $header);
+
+        $user = User::where('api_token', '=', $api_token)->first();
+        if(!$user) {
+            return response()->json(['status' => 400, 'errors' => 'invalid token.'], 400);
+        }
+
+        $jobs_query = Job::join('users', 'users.id', '=', 'jobs.user_id')
+                        ->with(['users', 'categories']);
+
+        $jobs = $jobs_query->where('user_id', $request->corpor_id)->where('status', 'open')->get();
+
+        return response()->json(['status' => 200, 'data' => $jobs], 200);
+    }
+
+    public function historyjob (Request $request) {
+        $header = $request->header('Authorization');
+        $api_token = str_replace('Bearer ', '', $header);
+
+        $user = User::where('api_token', '=', $api_token)->first();
+        if(!$user) {
+            return response()->json(['status' => 400, 'errors' => 'invalid token.'], 400);
+        }
+
+        $jobhis_query = Jobcontact::with(['job','users']);
+
+        $jobhis = $jobhis_query->where('responser_id', $user->id)->where('status', 'completed')->get();
+
+        return response()->json(['status' => 200, 'data' => $jobhis], 200);
+    }
     // Create a new job
     public function create (Request $request) {
         $header = $request->header('Authorization');
@@ -131,6 +182,14 @@ class JobController extends Controller
             if ($validator->fails()) {
                 return response()->json(['status' => 400, 'errors' => $validator->errors()], 400);
             }
+            if (Package::find($user->packageID) == null)
+            {
+                return response()->json(['status' => 400, 'errors' => 'Get Package'], 400);
+            }
+            if (Package::find($user->packageID)->postCount < Job::where('user_id',$user->id)->count())
+            {
+                return response()->json(['status' => 400, 'errors' => 'Post restricted'], 400);
+            }
 
             $job = new Job();
             $job->user_id = $user->id;
@@ -155,6 +214,137 @@ class JobController extends Controller
         }
     }
 
+    public function diroffer (Request $request) {
+        $header = $request->header('Authorization');
+        $api_token = str_replace('Bearer ', '', $header);
+        
+        $responser_token = '';
+        $user = User::where('api_token', '=', $api_token)->first();
+        if($request->sender_id == $api_token){
+            $responser_token = $request->receiver_id;
+        }else{
+            $responser_token = $request->sender_id;
+        }
+        $responser = User::where('api_token', '=', $responser_token)->first();
+        
+        if(!$user) {
+            return response()->json(['status' => 400, 'errors' => 'invalid token.'], 400);
+        }
+
+        if (Package::find($user->packageID) == null)
+        {
+            return response()->json(['status' => 400, 'errors' => 'Get Package'], 400);
+        }
+
+        // if (Package::find($user->packageID)->postCount < Job::where('user_id',$user->id)->count())
+        // {
+        //     return response()->json(['status' => 400, 'errors' => 'Post restricted'], 400);
+        // }
+
+        $job = new Job();
+        $job->user_id = $user->id;
+        $job->job_name = $request->subject;
+        $job->category_id = 2;
+        $job->status = 'open';
+        $job->job_details = $request->text;
+        $job->save();
+
+        $jobcontact = new Jobcontact();
+        $jobcontact->user_id = $user->id;
+        $jobcontact->job_id = $job->id;
+        $jobcontact->responser_id = $responser->id;
+        $jobcontact->status = 'offer';
+        $jobcontact->save();
+        
+        return response()->json(['status' => 200, 'message' => 'Successfully offered.','id' => $job->id, 'data' => $job], 200);
+
+    }
+    //Offer a job
+    public function offer (Request $request) {
+        $header = $request->header('Authorization');
+        $api_token = str_replace('Bearer ', '', $header);
+        
+        $responser_token = '';
+        $user = User::where('api_token', '=', $api_token)->first();
+        if($request->sender_id == $api_token){
+            $responser_token = $request->receiver_id;
+        }else{
+            $responser_token = $request->sender_id;
+        }
+        $responser = User::where('api_token', '=', $responser_token)->first();
+        
+        if(!$user) {
+            return response()->json(['status' => 400, 'errors' => 'invalid token.'], 400);
+        }
+
+        if (Package::find($user->packageID) == null)
+        {
+            return response()->json(['status' => 400, 'errors' => 'Get Package'], 400);
+        }
+
+        // if (Package::find($user->packageID)->postCount < Job::where('user_id',$user->id)->count())
+        // {
+        //     return response()->json(['status' => 400, 'errors' => 'Post restricted'], 400);
+        // }
+
+        $job = Job::find($request->id);
+        $job->status = 'close';
+        $job->save();
+
+        $jobcontact = new Jobcontact();
+        $jobcontact->user_id = $user->id;
+        $jobcontact->job_id = $request->id;
+        $jobcontact->responser_id = $responser->id;
+        $jobcontact->status = 'offer';
+        $jobcontact->save();
+        
+        return response()->json(['status' => 200, 'message' => 'Successfully offered.','id' => $job->id, 'data' => $job], 200);
+
+    }
+    public function accept (Request $request) {
+        $header = $request->header('Authorization');
+        $api_token = str_replace('Bearer ', '', $header);
+
+        $user = User::where('api_token', '=', $api_token)->first();
+        if(!$user) {
+            return response()->json(['status' => 400, 'errors' => 'invalid token.'], 400);
+        }
+
+        // if (Package::find($user->packageID) == null)
+        // {
+        //     return response()->json(['status' => 400, 'errors' => 'Get Package'], 400);
+        // }
+
+        $jobcontact = Jobcontact::where('job_id',$request->id)->first();
+        $jobcontact->status = 'accept';
+        $jobcontact->save();
+
+        return response()->json(['status' => 200, 'message' => 'Successfully accepted.', 'data' => $jobcontact], 200);
+
+    }
+    public function reject (Request $request) {
+        $header = $request->header('Authorization');
+        $api_token = str_replace('Bearer ', '', $header);
+
+        $user = User::where('api_token', '=', $api_token)->first();
+        if(!$user) {
+            return response()->json(['status' => 400, 'errors' => 'invalid token.'], 400);
+        }
+
+        // if (Package::find($user->packageID) == null)
+        // {
+        //     return response()->json(['status' => 400, 'errors' => 'Get Package'], 400);
+        // }
+
+        $jobcontact = Jobcontact::where('job_id',$request->id)->first();
+        $jobcontact->status = 'reject';
+        $jobcontact->save();
+
+
+
+        return response()->json(['status' => 200, 'message' => 'OK rejected.', 'data' => $jobcontact], 200);
+
+    }
     // Update a job
     public function update (Request $request, $id) {
         $header = $request->header('Authorization');
